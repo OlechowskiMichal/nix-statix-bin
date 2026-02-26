@@ -18,6 +18,8 @@ jobs:
         include:
           - os: macos-14
             target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
           - os: ubuntu-latest
@@ -28,11 +30,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: jdx/mise-action@v3
+        with:
+          install: true
+          cache: true
+        env:
+          MISE_ENV: ci
+
       - name: Read tool config
         id: config
-        run: |
-          echo "name=$(jq -r .name tool.json)" >> "$GITHUB_OUTPUT"
-          echo "upstream=$(jq -r .upstream tool.json)" >> "$GITHUB_OUTPUT"
+        run: echo "name=$(jq -r .name tool.json)" >> "$GITHUB_OUTPUT"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -41,34 +48,21 @@ jobs:
 
       - name: Install cross-compilation tools
         if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
+        run: task build:install-cross-tools
+        env:
+          TARGET: ${{ matrix.target }}
 
-      - name: Build from Git
-        run: |
-          cargo install \
-            --git "${{ steps.config.outputs.upstream }}" \
-            --tag "v${{ github.event.inputs.version }}" \
-            --target "${{ matrix.target }}" \
-            --root ./dist \
-            --locked || \
-          cargo install \
-            --git "${{ steps.config.outputs.upstream }}" \
-            --tag "v${{ github.event.inputs.version }}" \
-            --target "${{ matrix.target }}" \
-            --root ./dist
+      - name: Compile
+        run: task build:compile
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          TARGET: ${{ matrix.target }}
 
       - name: Package binary
-        run: |
-          TOOL="${{ steps.config.outputs.name }}"
-          TARGET="${{ matrix.target }}"
-          ARCHIVE="${TOOL}-${TARGET}.tar.gz"
-          cd dist/bin
-          tar czf "../../${ARCHIVE}" "${TOOL}"
-          cd ../..
-          shasum -a 256 "${ARCHIVE}" > "${ARCHIVE}.sha256"
+        run: task build:package
+        env:
+          TOOL_NAME: ${{ steps.config.outputs.name }}
+          TARGET: ${{ matrix.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -85,6 +79,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: jdx/mise-action@v3
+        with:
+          install: true
+          cache: true
+        env:
+          MISE_ENV: ci
+
       - name: Read tool config
         id: config
         run: echo "name=$(jq -r .name tool.json)" >> "$GITHUB_OUTPUT"
@@ -96,12 +97,8 @@ jobs:
           merge-multiple: true
 
       - name: Create GitHub Release
+        run: task build:release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TOOL="${{ steps.config.outputs.name }}"
-          VERSION="${{ github.event.inputs.version }}"
-          gh release create "v${VERSION}" \
-            --title "${TOOL} v${VERSION}" \
-            --notes "Prebuilt binaries for ${TOOL} v${VERSION} from upstream." \
-            artifacts/*
+          TOOL_NAME: ${{ steps.config.outputs.name }}
+          VERSION: ${{ github.event.inputs.version }}
