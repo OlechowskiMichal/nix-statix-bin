@@ -1,6 +1,6 @@
 {
-  "name": "example-tool",
-  "crate": "example-tool",
-  "upstream": "https://github.com/owner/example-tool",
-  "description": "Example nix tool"
+  "name": "statix",
+  "crate": "statix",
+  "upstream": "https://github.com/nerdypepper/statix",
+  "description": "Lints and suggestions for the nix programming language"
 }
