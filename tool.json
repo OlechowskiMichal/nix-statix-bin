@@ -1,6 +1,6 @@
 {
   "name": "statix",
-  "crate": "statix",
+  "source": "git",
   "upstream": "https://github.com/nerdypepper/statix",
   "description": "Lints and suggestions for the nix programming language"
 }

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Upstream version to build (e.g. v0.6.0)"
+        description: "Upstream version to build (e.g. 0.5.8)"
         required: true
         type: string
 
@@ -34,7 +34,7 @@ jobs:
         id: config
         run: |
           echo "name=$(jq -r .name tool.json)" >> "$GITHUB_OUTPUT"
-          echo "crate=$(jq -r .crate tool.json)" >> "$GITHUB_OUTPUT"
+          echo "upstream=$(jq -r .upstream tool.json)" >> "$GITHUB_OUTPUT"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -48,15 +48,17 @@ jobs:
           sudo apt-get install -y gcc-aarch64-linux-gnu
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
 
-      - name: Build from crates.io
+      - name: Build from Git
         run: |
-          cargo install "${{ steps.config.outputs.crate }}" \
-            --version "${{ github.event.inputs.version }}" \
+          cargo install \
+            --git "${{ steps.config.outputs.upstream }}" \
+            --tag "v${{ github.event.inputs.version }}" \
             --target "${{ matrix.target }}" \
             --root ./dist \
             --locked || \
-          cargo install "${{ steps.config.outputs.crate }}" \
-            --version "${{ github.event.inputs.version }}" \
+          cargo install \
+            --git "${{ steps.config.outputs.upstream }}" \
+            --tag "v${{ github.event.inputs.version }}" \
             --target "${{ matrix.target }}" \
             --root ./dist
 

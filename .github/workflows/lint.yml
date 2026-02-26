@@ -14,7 +14,7 @@ jobs:
       - name: Validate tool.json
         run: |
           jq empty tool.json
-          for field in name crate upstream description; do
+          for field in name upstream description; do
             value=$(jq -r ".${field}" tool.json)
             if [ "$value" = "null" ] || [ -z "$value" ]; then
               echo "ERROR: Missing required field '${field}' in tool.json"
