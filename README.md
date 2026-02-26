@@ -14,7 +14,6 @@ Prebuilt [statix](https://github.com/nerdypepper/statix) binaries for nix anti-p
 | Target | Runner |
 |--------|--------|
 | `aarch64-apple-darwin` | macOS 14 (Apple Silicon) |
-| `x86_64-apple-darwin` | macOS 15 Intel |
 | `x86_64-unknown-linux-gnu` | Ubuntu latest |
 | `aarch64-unknown-linux-gnu` | Ubuntu latest (cross) |
 
